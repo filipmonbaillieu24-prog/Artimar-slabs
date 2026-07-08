@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fbfbfb;
+  --foreground: #111111;
+  --primary: #D10056;
+  --primary-foreground: #ffffff;
+  --accent: #E673A4;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --border: #e4e4e7;
+  --ring: #D10056;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  --color-artimar-pink: #D10056;
+  --color-artimar-pink-light: #E673A4;
+  --color-artimar-dark: #111111;
+  --color-artimar-bg: #fbfbfb;
+
+  --font-sans: var(--font-outfit), sans-serif;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Custom inputs styling matching references */
+.artimar-input {
+  background-color: #EEF2F6 !important;
+  border: 1px solid transparent !important;
+  color: #111111 !important;
+  border-radius: 0.5rem !important;
+  padding: 0.625rem 1rem !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.artimar-input:focus {
+  outline: none !important;
+  border-color: #D10056 !important;
+  box-shadow: 0 0 0 2px rgba(209, 0, 86, 0.1) !important;
+}
+
+/* Step wizard classes */
+.wizard-step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.25rem;
+  font-weight: 700;
+  font-size: 1.125rem;
+  transition: all 0.2s;
+}
+
+.wizard-step-active {
+  background-color: #D10056;
+  color: #ffffff;
+}
+
+.wizard-step-inactive {
+  background-color: #e4e4e7;
+  color: #71717a;
+}

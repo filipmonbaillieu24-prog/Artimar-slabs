@@ -614,7 +614,15 @@ export default function OrderForm({ materials, profile }: OrderFormProps) {
                 {leveringMethode === 'ander' && (
                   <div className="sm:col-span-2 border-t border-gray-200/50 pt-2">
                     <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Leveringsadres</span>
-                    <p className="text-gray-700 font-semibold mt-0.5 leading-relaxed">{leveringAdres}</p>
+                    <p className="text-gray-700 font-bold mt-0.5 leading-relaxed">{leveringAdres}</p>
+                  </div>
+                )}
+                {leveringMethode === 'standaard' && (
+                  <div className="sm:col-span-2 border-t border-gray-200/50 pt-2">
+                    <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Standaard afleveradres</span>
+                    <p className="text-gray-700 font-bold mt-0.5 leading-relaxed">
+                      {profile?.standaard_adres || 'Geen standaard adres ingesteld (gelieve aan te vullen via Instellingen)'}
+                    </p>
                   </div>
                 )}
               </div>

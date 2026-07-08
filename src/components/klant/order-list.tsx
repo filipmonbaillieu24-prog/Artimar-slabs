@@ -173,41 +173,69 @@ export default function OrderList({ initialOrders }: OrderListProps) {
                           className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.015)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.035)] transition-all space-y-2.5"
                         >
                           <div className="flex justify-between items-start gap-1">
-                            <span className="text-[10px] font-black text-gray-800 shrink-0">
+                            <span className="text-[10px] font-black text-gray-800 shrink-0 bg-gray-100 px-1.5 py-0.5 rounded">
                               #{order.id.slice(0, 8).toUpperCase()}
                             </span>
                             {order.referentie && (
-                              <span className="text-[9px] bg-gray-50 text-gray-600 font-bold px-1.5 py-0.5 rounded border border-gray-150 truncate flex-1 text-right max-w-[90px]" title={order.referentie}>
-                                {order.referentie}
+                              <span className="text-[9px] bg-pink-50/20 text-[#D10056] font-bold px-1.5 py-0.5 rounded border border-[#FAD0E0]/35 truncate flex-1 text-right max-w-[100px]" title={order.referentie}>
+                                Ref: {order.referentie}
                               </span>
                             )}
                           </div>
 
-                          <div className="text-[10px] text-gray-400 space-y-1 font-semibold leading-tight">
+                          <div className="text-[9px] text-gray-450 space-y-1.5 font-semibold leading-tight">
                             <div>Gemaakt: {formatDate(order.created_at)}</div>
-                            {order.verwachte_datum && (
-                              <div className="text-amber-600 font-extrabold">
-                                Verwacht: {formatDate(order.verwachte_datum)}
-                              </div>
-                            )}
-                            {order.leverdatum && (
-                              <div className="text-[#D10056] font-extrabold">
-                                Levering: {formatDate(order.leverdatum)}
-                              </div>
-                            )}
+                            
+                            {/* Date Badges for High Visibility */}
+                            <div className="flex flex-col gap-1 pt-0.5">
+                              {order.verwachte_datum && (
+                                <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 text-amber-800 border border-amber-100/50 font-extrabold w-full">
+                                  <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
+                                  <span>Verwacht: {formatDate(order.verwachte_datum)}</span>
+                                </div>
+                              )}
+                              {order.leverdatum && (
+                                <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-pink-50 text-[#D10056] border border-[#FAD0E0]/30 font-black w-full">
+                                  <span className="w-1 h-1 rounded-full bg-[#D10056] shrink-0" />
+                                  <span>Levering: {formatDate(order.leverdatum)}</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
-                          {/* Quick item specs display */}
+                          {/* Detailed item specs list */}
                           {order.order_items && order.order_items.length > 0 && (
-                            <div className="bg-gray-50/50 p-2 rounded-lg border border-gray-100/50 text-[9px] space-y-0.5 text-gray-500">
-                              {order.order_items.map((item: any) => (
-                                <div key={item.id} className="flex justify-between items-center font-semibold gap-1">
-                                  <span className="truncate flex-1 mr-1" title={item.materials?.kleur}>
-                                    {item.materials?.kleur || 'Slab'}
-                                  </span>
-                                  <span className="text-[#D10056] font-bold shrink-0">{item.aantal} st.</span>
-                                </div>
-                              ))}
+                            <div className="space-y-1.5 pt-1">
+                              {order.order_items.map((item: any) => {
+                                const mat = item.materials
+                                return (
+                                  <div key={item.id} className="bg-gray-50/70 p-2 rounded-lg border border-gray-100 flex flex-col gap-1 text-[10px] leading-tight">
+                                    <div className="flex justify-between items-start gap-1">
+                                      <span className="font-extrabold text-gray-800 truncate flex-1" title={mat?.kleur}>
+                                        {mat ? `${mat.kleur} (${mat.code})` : 'Onbekend'}
+                                      </span>
+                                      <span className="text-[#D10056] font-black shrink-0 text-[11px]">
+                                        {item.aantal} st.
+                                      </span>
+                                    </div>
+                                    {mat && (
+                                      <div className="text-[9px] text-gray-500 font-semibold flex flex-wrap gap-x-1.5 gap-y-0.5 items-center leading-none mt-0.5">
+                                        <span>{mat.merk}</span>
+                                        <span className="text-gray-300">•</span>
+                                        <span>{mat.dikte_mm}mm</span>
+                                        <span className="text-gray-300">•</span>
+                                        <span className="truncate">{mat.afwerking}</span>
+                                      </div>
+                                    )}
+                                    <div className="text-[9px] text-gray-400 font-bold leading-none mt-0.5">
+                                      {item.lengte_mm && item.breedte_mm
+                                        ? `${item.lengte_mm} x ${item.breedte_mm} mm`
+                                        : 'Volledige plaat'
+                                      }
+                                    </div>
+                                  </div>
+                                )
+                              })}
                             </div>
                           )}
 

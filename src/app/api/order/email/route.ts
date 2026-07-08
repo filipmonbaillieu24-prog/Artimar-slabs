@@ -158,10 +158,11 @@ export async function POST(req: NextRequest) {
     `
 
     const fromEmail = process.env.EMAIL_FROM || 'Artimar Portaal <onboarding@resend.dev>'
+    const toEmail = process.env.EMAIL_TO || 'bestellingen@artimar.be'
     
     const { data, error: sendError } = await resend.emails.send({
       from: fromEmail,
-      to: 'bestellingen@artimar.be',
+      to: toEmail,
       subject: `Nieuwe bestelling #${order.id.slice(0, 8).toUpperCase()} - ${profile?.bedrijfsnaam || 'Klant'}`,
       html: emailHtml,
     })

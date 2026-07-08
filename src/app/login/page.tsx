@@ -37,21 +37,30 @@ export default function LoginPage() {
         return
       }
 
-      // Check user role to redirect
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single()
+      // Check user role from metadata or fallback to profiles table
+      let role = data.user?.user_metadata?.role || data.user?.app_metadata?.role
 
-      if (profileError || !profile) {
+      if (!role) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .single()
+
+        if (profileError) {
+          console.error('Profile fetch error:', profileError)
+        }
+        role = profile?.role
+      }
+
+      if (!role) {
         setError('Kan uw profielrol niet ophalen. Neem contact op met Artimar.')
         setLoading(false)
         return
       }
 
       router.refresh()
-      if (profile.role === 'admin') {
+      if (role === 'admin') {
         router.push('/portaal/admin')
       } else {
         router.push('/portaal/klant')

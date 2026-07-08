@@ -45,18 +45,21 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    // Fetch user profile to check role
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    // Check role from metadata first, fallback to database query
+    let role = user.user_metadata?.role || user.app_metadata?.role
 
-    if (profileError) {
-      console.error('Middleware profile fetch error:', profileError)
+    if (!role) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError) {
+        console.error('Middleware profile fetch error:', profileError)
+      }
+      role = profile?.role
     }
-
-    const role = profile?.role
 
     // Safety fallback: if no role is found, redirect to login
     if (!role) {

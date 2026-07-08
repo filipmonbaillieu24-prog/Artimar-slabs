@@ -46,13 +46,26 @@ export async function updateSession(request: NextRequest) {
     }
 
     // Fetch user profile to check role
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
+    if (profileError) {
+      console.error('Middleware profile fetch error:', profileError)
+    }
+
     const role = profile?.role
+
+    // Safety fallback: if no role is found, redirect to login
+    if (!role) {
+      console.warn('No role found for user, redirecting to /login')
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      // Clear cookies by returning a response that deletes them or just redirecting
+      return NextResponse.redirect(url)
+    }
 
     // Redirect to respective portal if trying to access the wrong area
     if (path.startsWith('/portaal/admin') && role !== 'admin') {

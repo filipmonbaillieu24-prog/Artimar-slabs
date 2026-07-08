@@ -5,32 +5,19 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogOut, User, ShieldAlert, Settings } from 'lucide-react'
 
-export default function Navbar() {
+interface NavbarProps {
+  initialProfile: { email: string; name: string; role: string } | null
+}
+
+export default function Navbar({ initialProfile }: NavbarProps) {
   const router = useRouter()
   const supabase = createClient()
-  const [userProfile, setUserProfile] = useState<{ email: string; name: string; role: string } | null>(null)
+  const [userProfile, setUserProfile] = useState(initialProfile)
 
+  // Synchronize state with server-provided layout updates
   useEffect(() => {
-    async function fetchUser() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('email, role, bedrijfsnaam')
-          .eq('id', user.id)
-          .single()
-
-        if (profile) {
-          setUserProfile({
-            email: profile.email,
-            name: profile.bedrijfsnaam || profile.email.split('@')[0],
-            role: profile.role,
-          })
-        }
-      }
-    }
-    fetchUser()
-  }, [supabase])
+    setUserProfile(initialProfile)
+  }, [initialProfile])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()

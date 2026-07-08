@@ -204,6 +204,19 @@ export default function OrderForm({ materials, profile }: OrderFormProps) {
           new_status: 'bestelling doorgestuurd'
         })
 
+      // 4. Trigger email sending to bestellingen@artimar.be
+      try {
+        await fetch('/api/order/email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ orderId: order.id })
+        })
+      } catch (e) {
+        console.error('Fout bij triggeren e-mail:', e)
+      }
+
       router.refresh()
       router.push('/portaal/klant')
     } catch (err: any) {

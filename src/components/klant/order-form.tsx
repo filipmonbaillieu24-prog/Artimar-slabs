@@ -382,7 +382,7 @@ export default function OrderForm({ materials, profile }: OrderFormProps) {
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider">
                         <th className="py-2.5 px-4">Materiaal</th>
-                        <th className="py-2.5 px-4">Merk / Dikte</th>
+                        <th className="py-2.5 px-4">Merk / Dikte / Afwerking</th>
                         <th className="py-2.5 px-4 text-center">Aantal (Volledige plaat)</th>
                         <th className="py-2.5 px-4 text-right">Actie</th>
                       </tr>
@@ -393,7 +393,7 @@ export default function OrderForm({ materials, profile }: OrderFormProps) {
                           <td className="py-3 px-4 font-semibold">
                             {item.material.kleur} ({item.material.code})
                           </td>
-                          <td className="py-3 px-4">{item.material.merk} | {item.material.dikte_mm} mm</td>
+                          <td className="py-3 px-4">{item.material.merk} | {item.material.dikte_mm} mm | {item.material.afwerking}</td>
                           <td className="py-3 px-4 text-center font-black text-[#D10056]">{item.aantal} platen</td>
                           <td className="py-3 px-4 text-right">
                             <button
@@ -753,14 +753,19 @@ export default function OrderForm({ materials, profile }: OrderFormProps) {
           {/* Itemized slab list */}
           {plateItems.length > 0 && (
             <div className="py-3 space-y-2">
-              <span className="text-gray-400 font-medium block">Geselecteerde platen:</span>
-              <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+              <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px] block">Geselecteerde platen:</span>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                 {plateItems.map((item) => (
-                  <div key={item.id} className="flex justify-between items-start text-[11px] bg-gray-50 p-2 rounded-lg border border-gray-100">
-                    <span className="font-bold text-gray-700 max-w-[150px] truncate">
-                      {item.material.kleur} ({item.material.code})
-                    </span>
-                    <span className="font-extrabold text-[#D10056] shrink-0">
+                  <div key={item.id} className="flex justify-between items-center text-[11px] bg-gray-50 p-2.5 rounded-lg border border-gray-100 gap-2">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-bold text-gray-800">
+                        {item.material.kleur} ({item.material.code})
+                      </span>
+                      <span className="text-[9px] text-gray-400 font-semibold leading-none mt-0.5">
+                        {item.material.merk} | {item.material.dikte_mm}mm | {item.material.afwerking}
+                      </span>
+                    </div>
+                    <span className="font-black text-[#D10056] shrink-0 text-xs">
                       {item.aantal} st.
                     </span>
                   </div>

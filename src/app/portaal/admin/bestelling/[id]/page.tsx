@@ -100,13 +100,18 @@ export default async function OrderDetailPage({ params }: PageProps) {
       {/* Title */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
               Bestelling #{order.id.slice(0, 8).toUpperCase()}
+              <StatusBadge status={order.status} />
             </h1>
-            <StatusBadge status={order.status} />
+            {order.referentie && (
+              <div className="text-sm font-bold text-gray-500">
+                Referentie: <span className="text-[#D10056]">{order.referentie}</span>
+              </div>
+            )}
           </div>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-400">
             Ingediend op {formatDateTime(order.created_at)}
           </p>
         </div>
@@ -153,6 +158,23 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   {formatDate(order.leverdatum)}
                 </span>
               </div>
+              <div>
+                <span className="text-gray-400 block font-medium">Levering / Afhaling:</span>
+                <span className="text-gray-800 font-bold mt-0.5 block">
+                  {order.levering_methode === 'standaard' && 'Standaard Partneradres'}
+                  {order.levering_methode === 'ander' && 'Afwijkend Leveringsadres'}
+                  {order.levering_methode === 'ophalen' && 'Zelf afhalen (Tongeren)'}
+                  {!order.levering_methode && 'Niet opgegeven'}
+                </span>
+              </div>
+              {order.levering_methode === 'ander' && (
+                <div className="sm:col-span-2">
+                  <span className="text-gray-400 block font-medium">Leveringsadres:</span>
+                  <span className="text-gray-800 font-bold mt-0.5 block bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                    {order.levering_adres}
+                  </span>
+                </div>
+              )}
               
               {order.opmerkingen && (
                 <div className="sm:col-span-2 mt-2 bg-gray-50 p-4 rounded-xl border border-gray-100/50">
@@ -197,7 +219,12 @@ export default async function OrderDetailPage({ params }: PageProps) {
                           {mat ? `${mat.kleur} (${mat.afwerking})` : 'Onbekend'}
                         </td>
                         <td className="py-3 px-4">{mat ? `${mat.dikte_mm} mm` : '-'}</td>
-                        <td className="py-3 px-4">{item.lengte_mm} x {item.breedte_mm} mm</td>
+                        <td className="py-3 px-4 text-gray-500">
+                          {item.lengte_mm && item.breedte_mm 
+                            ? `${item.lengte_mm} x ${item.breedte_mm} mm` 
+                            : 'Volledige plaat'
+                          }
+                        </td>
                         <td className="py-3 px-4 text-right font-extrabold text-gray-850">
                           {item.aantal} st.
                         </td>

@@ -32,6 +32,9 @@ export interface Order {
   verwachte_datum: string | null
   leverdatum: string | null
   opmerkingen: string | null
+  referentie: string | null
+  levering_methode: string | null
+  levering_adres: string | null
   created_at: string
   updated_at: string
   profiles?: Profile

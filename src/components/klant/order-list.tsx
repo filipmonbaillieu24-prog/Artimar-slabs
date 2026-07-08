@@ -48,10 +48,15 @@ export default function OrderList({ initialOrders }: OrderListProps) {
             {/* Header info */}
             <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-gray-500">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm font-bold text-gray-800">
                     Bestelling #{order.id.slice(0, 8).toUpperCase()}
                   </span>
+                  {order.referentie && (
+                    <span className="text-xs bg-gray-50 text-gray-600 font-bold px-2 py-0.5 rounded border border-gray-200">
+                      Ref: {order.referentie}
+                    </span>
+                  )}
                   <StatusBadge status={order.status} />
                 </div>
                 <div className="text-xs text-gray-400">
@@ -93,35 +98,51 @@ export default function OrderList({ initialOrders }: OrderListProps) {
             {/* Expandable items section */}
             {isExpanded && (
               <div className="border-t border-gray-50 bg-gray-50/50 p-5 space-y-4">
-                {/* Specific Dates Details */}
-                {(order.verwachte_datum || order.leverdatum || order.opmerkingen) && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-lg border border-gray-100 text-xs mb-2">
-                    {order.verwachte_datum && (
-                      <div>
-                        <span className="text-gray-400 block font-medium">Verwachte datum:</span>
-                        <span className="font-bold text-gray-700 mt-0.5 block">
-                          {formatDate(order.verwachte_datum)}
-                        </span>
-                      </div>
-                    )}
-                    {order.leverdatum && (
-                      <div>
-                        <span className="text-gray-400 block font-medium">Leverdatum:</span>
-                        <span className="font-bold text-gray-700 mt-0.5 block">
-                          {formatDate(order.leverdatum)}
-                        </span>
-                      </div>
-                    )}
-                    {order.opmerkingen && (
-                      <div className="md:col-span-3">
-                        <span className="text-gray-400 block font-medium">Opmerkingen klant:</span>
-                        <p className="text-gray-600 mt-1 italic whitespace-pre-wrap">
-                          {order.opmerkingen}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Specific Dates & Delivery Details */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-lg border border-gray-100 text-xs mb-2">
+                  {order.verwachte_datum && (
+                    <div>
+                      <span className="text-gray-400 block font-medium">Verwachte datum:</span>
+                      <span className="font-bold text-gray-700 mt-0.5 block">
+                        {formatDate(order.verwachte_datum)}
+                      </span>
+                    </div>
+                  )}
+                  {order.leverdatum && (
+                    <div>
+                      <span className="text-gray-400 block font-medium">Leverdatum:</span>
+                      <span className="font-bold text-gray-700 mt-0.5 block">
+                        {formatDate(order.leverdatum)}
+                      </span>
+                    </div>
+                  )}
+                  {order.levering_methode && (
+                    <div>
+                      <span className="text-gray-400 block font-medium">Levering / Afhaling:</span>
+                      <span className="font-bold text-gray-700 mt-0.5 block">
+                        {order.levering_methode === 'standaard' && 'Standaard Partneradres'}
+                        {order.levering_methode === 'ander' && 'Afwijkend Leveringsadres'}
+                        {order.levering_methode === 'ophalen' && 'Zelf afhalen (Magazijn)'}
+                      </span>
+                    </div>
+                  )}
+                  {order.levering_methode === 'ander' && order.levering_adres && (
+                    <div className="md:col-span-3 border-t border-gray-50 pt-2">
+                      <span className="text-gray-400 block font-medium">Leveringsadres:</span>
+                      <span className="font-bold text-gray-700 mt-0.5 block">
+                        {order.levering_adres}
+                      </span>
+                    </div>
+                  )}
+                  {order.opmerkingen && (
+                    <div className="md:col-span-3 border-t border-gray-50 pt-2">
+                      <span className="text-gray-400 block font-medium">Opmerkingen klant:</span>
+                      <p className="text-gray-600 mt-1 italic whitespace-pre-wrap">
+                        {order.opmerkingen}
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 {/* Table of items */}
                 <div className="overflow-x-auto bg-white border border-gray-100 rounded-lg">
@@ -149,8 +170,11 @@ export default function OrderList({ initialOrders }: OrderListProps) {
                             <td className="py-3 px-4 font-medium">
                               {mat ? `${mat.dikte_mm} mm` : '-'}
                             </td>
-                            <td className="py-3 px-4">
-                              {item.lengte_mm} x {item.breedte_mm} mm
+                            <td className="py-3 px-4 font-medium text-gray-500">
+                              {item.lengte_mm && item.breedte_mm 
+                                ? `${item.lengte_mm} x ${item.breedte_mm} mm` 
+                                : 'Volledige plaat'
+                              }
                             </td>
                             <td className="py-3 px-4 text-right font-bold">
                               {item.aantal} st.

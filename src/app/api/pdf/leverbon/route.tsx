@@ -194,13 +194,28 @@ const LeverbonDocument = ({ order, client, items }: PDFProps) => {
         {/* Metadata info cards */}
         <View style={styles.metaContainer}>
           <View style={styles.metaBlock}>
-            <Text style={styles.metaLabel}>Klant Gegevens</Text>
+            <Text style={styles.metaLabel}>Klant & Adres</Text>
             <Text style={styles.metaValue}>{client?.bedrijfsnaam || 'Klant'}</Text>
             <Text style={{ fontSize: 9, color: '#666666', marginTop: 2 }}>{client?.email}</Text>
+            {order.levering_methode && (
+              <Text style={{ fontSize: 8, color: '#666666', marginTop: 6, fontWeight: 'bold' }}>
+                Methode: {order.levering_methode === 'standaard' ? 'Standaard Partneradres' : (order.levering_methode === 'ophalen' ? 'Zelf Afhalen' : 'Afwijkend Adres')}
+              </Text>
+            )}
+            {order.levering_methode === 'ander' && order.levering_adres && (
+              <Text style={{ fontSize: 8, color: '#444444', marginTop: 2 }}>
+                {order.levering_adres}
+              </Text>
+            )}
           </View>
           <View style={styles.metaBlock}>
             <Text style={styles.metaLabel}>Bestelling Info</Text>
             <Text style={styles.metaValue}>Bon nr: #{order.id.slice(0, 8).toUpperCase()}</Text>
+            {order.referentie && (
+              <Text style={{ fontSize: 9, color: '#D10056', fontWeight: 'bold', marginTop: 2 }}>
+                Ref: {order.referentie}
+              </Text>
+            )}
             <Text style={{ fontSize: 9, color: '#666666', marginTop: 2 }}>
               Leverdatum: {formattedDate(order.leverdatum)}
             </Text>
@@ -228,7 +243,12 @@ const LeverbonDocument = ({ order, client, items }: PDFProps) => {
                 <Text style={styles.colMaterial}>{mat ? `${mat.merk} - ${mat.code}` : 'Onbekend'}</Text>
                 <Text style={styles.colFinish}>{mat ? `${mat.kleur} (${mat.afwerking})` : 'Onbekend'}</Text>
                 <Text style={styles.colThick}>{mat ? `${mat.dikte_mm} mm` : '-'}</Text>
-                <Text style={styles.colDim}>{item.lengte_mm} x {item.breedte_mm}</Text>
+                <Text style={styles.colDim}>
+                  {item.lengte_mm && item.breedte_mm 
+                    ? `${item.lengte_mm}x${item.breedte_mm}` 
+                    : 'Volledige plaat'
+                  }
+                </Text>
               </View>
             )
           })}

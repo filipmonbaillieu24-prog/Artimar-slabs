@@ -23,11 +23,13 @@ export default function OrderTable({ orders }: OrderTableProps) {
       const email = klant?.email || ''
       const bedrijf = klant?.bedrijfsnaam || ''
       const orderId = order.id.toUpperCase()
+      const referentie = order.referentie || ''
       
       const matchesSearch = 
         email.toLowerCase().includes(search.toLowerCase()) ||
         bedrijf.toLowerCase().includes(search.toLowerCase()) ||
-        orderId.includes(search.toUpperCase())
+        orderId.includes(search.toUpperCase()) ||
+        referentie.toLowerCase().includes(search.toLowerCase())
 
       let matchesStatus = true
       if (statusFilter === 'doorgestuurd') {
@@ -147,8 +149,17 @@ export default function OrderTable({ orders }: OrderTableProps) {
                 const itemsCount = order.order_items?.reduce((acc, item) => acc + item.aantal, 0) || 0
                 return (
                   <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="py-4 px-6 font-mono font-bold text-gray-800">
-                      #{order.id.slice(0, 8).toUpperCase()}
+                    <td className="py-4 px-6">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-mono font-bold text-gray-800">
+                          #{order.id.slice(0, 8).toUpperCase()}
+                        </span>
+                        {order.referentie && (
+                          <span className="text-[10px] text-gray-500 font-semibold truncate max-w-[120px]">
+                            Ref: {order.referentie}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex flex-col gap-0.5">

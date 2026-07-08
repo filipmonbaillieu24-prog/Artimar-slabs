@@ -33,10 +33,22 @@ export default async function AdminDashboard() {
       *,
       profiles (
         email,
-        bedrijfsnaam
+        bedrijfsnaam,
+        contactnummer
       ),
       order_items (
-        aantal
+        id,
+        aantal,
+        op_voorraad,
+        geleverd,
+        verwachte_datum,
+        materials (
+          kleur,
+          merk,
+          code,
+          afwerking,
+          dikte_mm
+        )
       )
     `)
     .order('created_at', { ascending: false })

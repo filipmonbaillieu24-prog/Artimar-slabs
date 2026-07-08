@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { OrderItem, OrderStatus } from '@/types/database.types'
-import { Check, X, Minus, PackageCheck, PackagePlus, Loader2, AlertCircle, Calendar } from 'lucide-react'
+import {
+  Check, X, Minus, PackageCheck, PackagePlus,
+  Loader2, AlertCircle, CalendarClock, RotateCcw, Truck
+} from 'lucide-react'
 
 interface StockManagerProps {
   orderId: string
@@ -30,19 +33,16 @@ export default function StockManager({ orderId, initialItems, orderStatus }: Sto
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
-  // Leverdatum for in-stock delivery
-  const [leverdatum, setLeverdatum] = useState<string>('')
-
   const pendingItems = items.filter(i => !i.geleverd)
   const inStockPending = pendingItems.filter(i => i.op_voorraad === true)
   const notInStockPending = pendingItems.filter(i => i.op_voorraad === false)
   const deliveredItems = items.filter(i => i.geleverd)
 
-  const hasDelivery = inStockPending.length > 0
-  const allPendingInStock = inStockPending.length > 0 && notInStockPending.length === 0
+  const canPlanDelivery = inStockPending.length > 0
+  const canConfirmDelivery = inStockPending.length > 0
   const isPartial = inStockPending.length > 0 && notInStockPending.length > 0
 
-  // Toggle stock status for a single item
+  // ─── Stock toggle ────────────────────────────────────────────
   const handleToggleStock = async (item: OrderItem, newState: StockState) => {
     const newVal = newState === 'in_stock' ? true : newState === 'not_in_stock' ? false : null
     setSaving(item.id)
@@ -64,7 +64,7 @@ export default function StockManager({ orderId, initialItems, orderStatus }: Sto
     setSaving(null)
   }
 
-  // Save per-item estimated date
+  // ─── Per-item date ───────────────────────────────────────────
   const handleItemDateChange = async (item: OrderItem, date: string) => {
     const updated = items.map(i => i.id === item.id ? { ...i, verwachte_datum: date || null } : i)
     setItems(updated)
@@ -79,12 +79,8 @@ export default function StockManager({ orderId, initialItems, orderStatus }: Sto
     }
   }
 
-  // Execute delivery for all in-stock items
-  const handleDelivery = async () => {
-    if (!leverdatum) {
-      setError('Geef een leverdatum op voor de items die op voorraad zijn.')
-      return
-    }
+  // ─── Plan delivery (save dates, update status — no geleverd yet) ──
+  const handlePlanDelivery = async () => {
     setActionLoading(true)
     setError(null)
     setSuccessMsg(null)
@@ -93,7 +89,53 @@ export default function StockManager({ orderId, initialItems, orderStatus }: Sto
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Niet ingelogd.')
 
-      // Mark in-stock pending items as delivered
+      const newStatus: OrderStatus = 'bestelling ingepland voor levering'
+
+      // Set leverdatum on order from the first in-stock item's planned date (if set)
+      const firstDate = inStockPending.find(i => i.verwachte_datum)?.verwachte_datum || null
+
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({
+          status: newStatus,
+          leverdatum: firstDate,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+
+      if (orderError) throw new Error(orderError.message)
+
+      await supabase.from('order_status_history').insert({
+        order_id: orderId,
+        changed_by: user.id,
+        old_status: orderStatus,
+        new_status: newStatus,
+        metadata: {
+          actie: 'levering ingepland',
+          items_op_voorraad: inStockPending.length,
+          items_nalevering: notInStockPending.length
+        }
+      })
+
+      setSuccessMsg(`Levering ingepland voor ${inStockPending.length} item(s).${notInStockPending.length > 0 ? ` ${notInStockPending.length} item(s) in nalevering.` : ''}`)
+      router.refresh()
+    } catch (err: any) {
+      setError(err.message || 'Onbekende fout.')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  // ─── Confirm delivery (geleverd = true for in-stock items) ───
+  const handleConfirmDelivery = async () => {
+    setActionLoading(true)
+    setError(null)
+    setSuccessMsg(null)
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Niet ingelogd.')
+
       const { error: itemsError } = await supabase
         .from('order_items')
         .update({ geleverd: true })
@@ -101,45 +143,64 @@ export default function StockManager({ orderId, initialItems, orderStatus }: Sto
 
       if (itemsError) throw new Error(itemsError.message)
 
-      // Determine new order status
-      const newStatus: OrderStatus = allPendingInStock ? 'bestelling geleverd' : 'deellevering uitgevoerd'
+      const allWillBeDelivered = notInStockPending.length === 0
+      const newStatus: OrderStatus = allWillBeDelivered ? 'bestelling geleverd' : 'deellevering uitgevoerd'
 
-      // Update order: status + leverdatum
       const { error: orderError } = await supabase
         .from('orders')
-        .update({
-          status: newStatus,
-          leverdatum: leverdatum,
-          updated_at: new Date().toISOString()
-        })
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq('id', orderId)
 
       if (orderError) throw new Error(orderError.message)
 
-      // Audit trail
       await supabase.from('order_status_history').insert({
         order_id: orderId,
         changed_by: user.id,
         old_status: orderStatus,
         new_status: newStatus,
         metadata: {
-          actie: allPendingInStock ? 'volledige levering' : 'deellevering',
-          geleverd_items: inStockPending.length,
-          leverdatum: leverdatum
+          actie: allWillBeDelivered ? 'volledige levering bevestigd' : 'deellevering bevestigd',
+          geleverd_items: inStockPending.length
         }
       })
 
-      const msg = allPendingInStock
-        ? `Volledige levering uitgevoerd op ${leverdatum}. Alle ${inStockPending.length} items geleverd.`
-        : `Deellevering uitgevoerd op ${leverdatum} (${inStockPending.length} items). ${notInStockPending.length} item(s) in nalevering.`
-
-      setSuccessMsg(msg)
+      setSuccessMsg(`Levering bevestigd voor ${inStockPending.length} item(s).`)
       router.refresh()
     } catch (err: any) {
       setError(err.message || 'Onbekende fout.')
     } finally {
       setActionLoading(false)
     }
+  }
+
+  // ─── Undo delivery (reset geleverd = false) ──────────────────
+  const handleUndoDelivery = async (item: OrderItem) => {
+    setSaving(item.id)
+    setError(null)
+    setSuccessMsg(null)
+
+    const updated = items.map(i => i.id === item.id ? { ...i, geleverd: false } : i)
+    setItems(updated)
+
+    const { error: updateError } = await supabase
+      .from('order_items')
+      .update({ geleverd: false })
+      .eq('id', item.id)
+
+    if (updateError) {
+      setItems(items)
+      setError(`Fout bij ongedaan maken: ${updateError.message}`)
+    } else {
+      // Also roll back order status if all items were delivered
+      if (deliveredItems.length === items.length) {
+        await supabase
+          .from('orders')
+          .update({ status: 'bestelling ingepland voor levering', updated_at: new Date().toISOString() })
+          .eq('id', orderId)
+        router.refresh()
+      }
+    }
+    setSaving(null)
   }
 
   return (
@@ -181,7 +242,12 @@ export default function StockManager({ orderId, initialItems, orderStatus }: Sto
               <th className="py-2.5 px-4">Materiaal</th>
               <th className="py-2.5 px-4 text-center">Aantal</th>
               <th className="py-2.5 px-4 text-center">Voorraad</th>
-              <th className="py-2.5 px-4">Geschatte datum</th>
+              <th className="py-2.5 px-4">
+                <span className="flex items-center gap-1">
+                  <CalendarClock className="w-3 h-3" />
+                  Datum
+                </span>
+              </th>
               <th className="py-2.5 px-4 text-center">Status</th>
             </tr>
           </thead>
@@ -191,22 +257,23 @@ export default function StockManager({ orderId, initialItems, orderStatus }: Sto
               const stockState = getStockState(item.op_voorraad)
               const isSaving = saving === item.id
               const isNotInStock = stockState === 'not_in_stock'
+              const isInStock = stockState === 'in_stock'
 
               return (
                 <tr
                   key={item.id}
                   className={`transition-colors ${
                     item.geleverd
-                      ? 'bg-emerald-50/40 opacity-60'
+                      ? 'bg-emerald-50/40'
                       : isNotInStock
                       ? 'bg-amber-50/30'
-                      : stockState === 'in_stock'
+                      : isInStock
                       ? 'bg-emerald-50/20'
                       : 'bg-white'
                   }`}
                 >
-                  {/* Material info */}
-                  <td className="py-3 px-4">
+                  {/* Material */}
+                  <td className={`py-3 px-4 ${item.geleverd ? 'opacity-60' : ''}`}>
                     <div className="font-bold text-gray-800">{mat?.kleur || 'Onbekend'}</div>
                     <div className="text-[10px] text-gray-400 mt-0.5">
                       {mat ? `${mat.merk} · ${mat.code} · ${mat.dikte_mm}mm · ${mat.afwerking}` : ''}
@@ -214,7 +281,7 @@ export default function StockManager({ orderId, initialItems, orderStatus }: Sto
                   </td>
 
                   {/* Quantity */}
-                  <td className="py-3 px-4 text-center font-extrabold text-gray-700">
+                  <td className={`py-3 px-4 text-center font-extrabold text-gray-700 ${item.geleverd ? 'opacity-60' : ''}`}>
                     {item.aantal} st.
                   </td>
 
@@ -228,7 +295,6 @@ export default function StockManager({ orderId, initialItems, orderStatus }: Sto
                       </div>
                     ) : (
                       <div className="flex items-center justify-center gap-1">
-                        {/* Not in stock */}
                         <button
                           type="button"
                           disabled={isSaving || actionLoading}
@@ -242,13 +308,11 @@ export default function StockManager({ orderId, initialItems, orderStatus }: Sto
                         >
                           {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
                         </button>
-
-                        {/* Reset to unknown */}
                         <button
                           type="button"
                           disabled={isSaving || actionLoading}
                           onClick={() => handleToggleStock(item, 'unknown')}
-                          title="Nog niet gecheckt"
+                          title="Onbekend"
                           className={`w-7 h-7 rounded-full flex items-center justify-center transition-all border ${
                             stockState === 'unknown'
                               ? 'bg-gray-400 border-gray-400 text-white shadow-sm'
@@ -257,8 +321,6 @@ export default function StockManager({ orderId, initialItems, orderStatus }: Sto
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-
-                        {/* In stock */}
                         <button
                           type="button"
                           disabled={isSaving || actionLoading}
@@ -276,31 +338,59 @@ export default function StockManager({ orderId, initialItems, orderStatus }: Sto
                     )}
                   </td>
 
-                  {/* Per-item estimated date (only for not-in-stock, not delivered) */}
+                  {/* Date column */}
                   <td className="py-3 px-4">
-                    {!item.geleverd && isNotInStock ? (
-                      <input
-                        type="date"
-                        value={item.verwachte_datum || ''}
-                        onChange={(e) => handleItemDateChange(item, e.target.value)}
-                        disabled={actionLoading}
-                        className="w-full text-xs font-semibold py-1.5 px-2.5 border border-amber-200 rounded-lg bg-amber-50/50 text-amber-800 focus:outline-none focus:ring-1 focus:ring-amber-300 disabled:opacity-50"
-                      />
-                    ) : item.geleverd ? (
-                      <span className="text-[10px] text-gray-400 italic">—</span>
+                    {item.geleverd ? (
+                      // Delivered: show date read-only + undo button
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-gray-500 font-semibold">
+                          {item.verwachte_datum || '—'}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={isSaving || actionLoading}
+                          onClick={() => handleUndoDelivery(item)}
+                          title="Levering ongedaan maken"
+                          className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-red-500 font-bold border border-gray-200 hover:border-red-200 hover:bg-red-50 rounded-md px-1.5 py-1 transition-all disabled:opacity-40"
+                        >
+                          {isSaving
+                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                            : <RotateCcw className="w-3 h-3" />
+                          }
+                          Ongedaan
+                        </button>
+                      </div>
+                    ) : (isInStock || isNotInStock) ? (
+                      // Editable date for both in-stock (planned delivery) and not-in-stock (estimated availability)
+                      <div className="space-y-0.5">
+                        <input
+                          type="date"
+                          value={item.verwachte_datum || ''}
+                          onChange={(e) => handleItemDateChange(item, e.target.value)}
+                          disabled={actionLoading}
+                          className={`w-full text-xs font-semibold py-1.5 px-2.5 border rounded-lg focus:outline-none focus:ring-1 disabled:opacity-50 ${
+                            isInStock
+                              ? 'border-emerald-200 bg-emerald-50/50 text-emerald-800 focus:ring-emerald-300'
+                              : 'border-amber-200 bg-amber-50/50 text-amber-800 focus:ring-amber-300'
+                          }`}
+                        />
+                        <div className={`text-[9px] font-semibold ${isInStock ? 'text-emerald-500' : 'text-amber-500'}`}>
+                          {isInStock ? 'Geplande leverdatum' : 'Geschatte beschikbaarheid'}
+                        </div>
+                      </div>
                     ) : (
                       <span className="text-[10px] text-gray-300">—</span>
                     )}
                   </td>
 
-                  {/* Status label */}
+                  {/* Status */}
                   <td className="py-3 px-4 text-center">
                     {item.geleverd ? (
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600">
                         <Check className="w-3 h-3" /> Geleverd
                       </span>
                     ) : stockState === 'in_stock' ? (
-                      <span className="text-[10px] font-bold text-emerald-500">Klaar</span>
+                      <span className="text-[10px] font-bold text-emerald-500">Op voorraad</span>
                     ) : stockState === 'not_in_stock' ? (
                       <span className="text-[10px] font-bold text-amber-500">Nalevering</span>
                     ) : (
@@ -314,50 +404,47 @@ export default function StockManager({ orderId, initialItems, orderStatus }: Sto
         </table>
       </div>
 
-      {/* Delivery section — only shown when there are in-stock items to deliver */}
-      {hasDelivery && (
+      {/* Action buttons — only when in-stock pending items exist */}
+      {canPlanDelivery && (
         <div className="bg-gray-50/80 border border-gray-100 rounded-xl p-4 space-y-3">
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500">
-            <Calendar className="w-3.5 h-3.5" />
-            {isPartial ? 'Deellevering — Leverdatum bij klant' : 'Levering — Leverdatum bij klant'}
-          </div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+            <Truck className="w-3.5 h-3.5" />
+            Leveringsbeheer — {inStockPending.length} item(s) op voorraad
+            {isPartial && `, ${notInStockPending.length} in nalevering`}
+          </p>
 
-          <div className="flex items-center gap-3">
-            <input
-              type="date"
-              value={leverdatum}
-              onChange={(e) => { setLeverdatum(e.target.value); setError(null) }}
-              disabled={actionLoading}
-              className="flex-1 text-xs font-semibold py-2.5 px-3 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#D10056] disabled:opacity-50"
-            />
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* Plan delivery */}
             <button
               type="button"
-              disabled={actionLoading || !leverdatum}
-              onClick={handleDelivery}
-              className={`flex items-center gap-2 px-4 py-2.5 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+              disabled={actionLoading}
+              onClick={handlePlanDelivery}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#D10056] hover:bg-[#B00047] text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarClock className="w-4 h-4" />}
+              Levering inplannen
+            </button>
+
+            {/* Confirm delivery */}
+            <button
+              type="button"
+              disabled={actionLoading}
+              onClick={handleConfirmDelivery}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                 isPartial
                   ? 'bg-violet-600 hover:bg-violet-700'
                   : 'bg-emerald-600 hover:bg-emerald-700'
               }`}
             >
-              {actionLoading
-                ? <Loader2 className="w-4 h-4 animate-spin" />
-                : isPartial
-                  ? <PackagePlus className="w-4 h-4" />
-                  : <PackageCheck className="w-4 h-4" />
-              }
-              {isPartial
-                ? `Deellevering (${inStockPending.length} st.)`
-                : `Levering (${inStockPending.length} st.)`
-              }
+              {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : isPartial ? <PackagePlus className="w-4 h-4" /> : <PackageCheck className="w-4 h-4" />}
+              {isPartial ? 'Deellevering bevestigen' : 'Levering bevestigen'}
             </button>
           </div>
 
-          {isPartial && (
-            <p className="text-[10px] text-amber-600 font-semibold">
-              {notInStockPending.length} item(s) worden nageverd. Stel hierboven per item een geschatte datum in.
-            </p>
-          )}
+          <p className="text-[10px] text-gray-400 leading-relaxed">
+            <strong className="text-[#D10056]">Inplannen</strong> slaat de datums op en zet de status op "Ingepland". 
+            <strong className="text-emerald-600"> Bevestigen</strong> markeert de items effectief als geleverd.
+          </p>
         </div>
       )}
 

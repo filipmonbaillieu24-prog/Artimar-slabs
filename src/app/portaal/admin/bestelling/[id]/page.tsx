@@ -164,14 +164,12 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   <span className="text-gray-800 font-bold mt-0.5 block">{client.contactnummer}</span>
                 </div>
               )}
-              {client?.standaard_adres && (
-                <div className="sm:col-span-2">
-                  <span className="text-gray-400 block font-medium">Standaard Adres:</span>
-                  <span className="text-gray-800 font-bold mt-0.5 block bg-gray-50/50 p-2.5 rounded-lg border border-gray-100">
-                    {client.standaard_adres}
-                  </span>
-                </div>
-              )}
+              <div className="sm:col-span-2">
+                <span className="text-gray-400 block font-bold uppercase tracking-wider text-[10px]">Leveradres bestelling:</span>
+                <span className="text-[#D10056] font-extrabold mt-0.5 block bg-pink-50/10 p-3 rounded-lg border border-[#FAD0E0]/50 text-sm">
+                  {order.levering_adres || 'Niet opgegeven'}
+                </span>
+              </div>
             </div>
 
             {/* Structured weekly opening hours display */}
@@ -228,15 +226,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   {!order.levering_methode && 'Niet opgegeven'}
                 </span>
               </div>
-              {order.levering_methode === 'ander' && (
-                <div className="sm:col-span-2">
-                  <span className="text-gray-400 block font-medium">Leveringsadres:</span>
-                  <span className="text-gray-800 font-bold mt-0.5 block bg-gray-50 p-2.5 rounded-lg border border-gray-100">
-                    {order.levering_adres}
-                  </span>
-                </div>
-              )}
-              
+
               {order.opmerkingen && (
                 <div className="sm:col-span-2 mt-2 bg-gray-50 p-4 rounded-xl border border-gray-100/50">
                   <span className="text-gray-400 font-medium flex items-center gap-1 mb-1.5">

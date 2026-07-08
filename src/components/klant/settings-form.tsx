@@ -65,9 +65,54 @@ export default function SettingsForm({ initialProfile }: SettingsFormProps) {
   )
   const [newAdresInput, setNewAdresInput] = useState('')
 
-  // Auth credential states
   const [email, setEmail] = useState(initialProfile.email || '')
   const [password, setPassword] = useState('')
+
+  // Autocomplete suggestion states
+  const [standaardSuggestions, setStandaardSuggestions] = useState<string[]>([])
+  const [anderSuggestions, setAnderSuggestions] = useState<string[]>([])
+  const [standaardTimeout, setStandaardTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [anderTimeout, setAnderTimeout] = useState<NodeJS.Timeout | null>(null)
+
+  const fetchAddressSuggestions = async (query: string, type: 'standaard' | 'ander') => {
+    if (query.length < 4) {
+      if (type === 'standaard') setStandaardSuggestions([])
+      if (type === 'ander') setAnderSuggestions([])
+      return
+    }
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=be,nl&limit=5`, {
+        headers: {
+          'Accept-Language': 'nl',
+          'User-Agent': 'ArtimarSlabPortal/1.0'
+        }
+      })
+      const data = await res.json()
+      const formatted = data.map((item: any) => item.display_name)
+      if (type === 'standaard') setStandaardSuggestions(formatted)
+      if (type === 'ander') setAnderSuggestions(formatted)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleStandaardChange = (val: string) => {
+    setStandaardAdres(val)
+    if (standaardTimeout) clearTimeout(standaardTimeout)
+    const t = setTimeout(() => {
+      fetchAddressSuggestions(val, 'standaard')
+    }, 400)
+    setStandaardTimeout(t)
+  }
+
+  const handleAnderChange = (val: string) => {
+    setNewAdresInput(val)
+    if (anderTimeout) clearTimeout(anderTimeout)
+    const t = setTimeout(() => {
+      fetchAddressSuggestions(val, 'ander')
+    }, 400)
+    setAnderTimeout(t)
+  }
 
   // Add alternative address to list
   const handleAddAddress = () => {
@@ -371,16 +416,33 @@ export default function SettingsForm({ initialProfile }: SettingsFormProps) {
             </h2>
 
             {/* Default Address */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 relative">
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
                 Standaard Partneradres
               </label>
               <textarea
                 value={standaardAdres}
-                onChange={(e) => setStandaardAdres(e.target.value)}
+                onChange={(e) => handleStandaardChange(e.target.value)}
                 placeholder="Bijv. Industrielaan 10, 3700 Tongeren"
                 className="w-full artimar-input h-20 text-xs resize-none"
               />
+              {standaardSuggestions.length > 0 && (
+                <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-250 rounded-lg shadow-lg max-h-48 overflow-y-auto divide-y divide-gray-50">
+                  {standaardSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => {
+                        setStandaardAdres(suggestion)
+                        setStandaardSuggestions([])
+                      }}
+                      className="w-full text-left p-2.5 hover:bg-gray-50 text-[10px] font-semibold text-gray-700 leading-normal"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
               <p className="text-[10px] text-gray-400 font-medium">
                 Het hoofdadres waar uw bestellingen standaard naartoe gestuurd worden.
               </p>
@@ -393,11 +455,11 @@ export default function SettingsForm({ initialProfile }: SettingsFormProps) {
               </label>
 
               {/* Add New Address input */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 relative">
                 <input
                   type="text"
                   value={newAdresInput}
-                  onChange={(e) => setNewAdresInput(e.target.value)}
+                  onChange={(e) => handleAnderChange(e.target.value)}
                   placeholder="Voeg een werf- of afwijkend adres toe..."
                   className="flex-1 artimar-input text-xs"
                 />
@@ -408,6 +470,24 @@ export default function SettingsForm({ initialProfile }: SettingsFormProps) {
                 >
                   <Plus className="w-4 h-4" />
                 </button>
+
+                {anderSuggestions.length > 0 && (
+                  <div className="absolute z-50 left-0 right-12 top-full mt-1 bg-white border border-gray-250 rounded-lg shadow-lg max-h-48 overflow-y-auto divide-y divide-gray-50">
+                    {anderSuggestions.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => {
+                          setNewAdresInput(suggestion)
+                          setAnderSuggestions([])
+                        }}
+                        className="w-full text-left p-2.5 hover:bg-gray-50 text-[10px] font-semibold text-gray-700 leading-normal"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Addresses list */}

@@ -38,6 +38,39 @@ export default function OrderForm({ materials, profile }: OrderFormProps) {
   const [leveringAdres, setLeveringAdres] = useState('')
   const [opmerkingen, setOpmerkingen] = useState('')
 
+  // Wizard address autocomplete suggestions state
+  const [wizardSuggestions, setWizardSuggestions] = useState<string[]>([])
+  const [wizardTimeout, setWizardTimeout] = useState<NodeJS.Timeout | null>(null)
+
+  const fetchWizardSuggestions = async (query: string) => {
+    if (query.length < 4) {
+      setWizardSuggestions([])
+      return
+    }
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=be,nl&limit=5`, {
+        headers: {
+          'Accept-Language': 'nl',
+          'User-Agent': 'ArtimarSlabPortal/1.0'
+        }
+      })
+      const data = await res.json()
+      const formatted = data.map((item: any) => item.display_name)
+      setWizardSuggestions(formatted)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleWizardAddressChange = (val: string) => {
+    setLeveringAdres(val)
+    if (wizardTimeout) clearTimeout(wizardTimeout)
+    const t = setTimeout(() => {
+      fetchWizardSuggestions(val)
+    }, 400)
+    setWizardTimeout(t)
+  }
+
   // Material filters
   const [searchQuery, setSearchQuery] = useState('')
   const [filterMerk, setFilterMerk] = useState<string>('Alle')
@@ -543,7 +576,7 @@ export default function OrderForm({ materials, profile }: OrderFormProps) {
                   </div>
                 )}
 
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <label className="text-xs font-bold uppercase tracking-wider text-gray-600 block">
                     {profile?.andere_adressen && profile.andere_adressen.length > 0 
                       ? "Of voer een ander handmatig adres in" 
@@ -552,10 +585,27 @@ export default function OrderForm({ materials, profile }: OrderFormProps) {
                   </label>
                   <textarea
                     value={leveringAdres}
-                    onChange={(e) => setLeveringAdres(e.target.value)}
+                    onChange={(e) => handleWizardAddressChange(e.target.value)}
                     placeholder="Voer straatnaam, nummer, postcode en plaats in..."
                     className="w-full artimar-input h-24 resize-none"
                   />
+                  {wizardSuggestions.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-250 rounded-lg shadow-lg max-h-48 overflow-y-auto divide-y divide-gray-50">
+                      {wizardSuggestions.map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => {
+                            setLeveringAdres(suggestion)
+                            setWizardSuggestions([])
+                          }}
+                          className="w-full text-left p-2.5 hover:bg-gray-50 text-[10px] font-semibold text-gray-700 leading-normal"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

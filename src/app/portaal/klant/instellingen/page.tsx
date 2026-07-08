@@ -1,12 +1,12 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import OrderForm from '@/components/klant/order-form'
+import SettingsForm from '@/components/klant/settings-form'
 import { ArrowLeft } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
-export default async function NieuweBestelling() {
+export default async function SettingsPage() {
   const supabase = await createClient()
 
   // Verify auth session
@@ -15,25 +15,24 @@ export default async function NieuweBestelling() {
     redirect('/login')
   }
 
-  // Fetch materials catalogue
-  const { data: materials } = await supabase
-    .from('materials')
-    .select('*')
-    .order('merk', { ascending: true })
-    .order('kleur', { ascending: true })
-
-  // Fetch client profile for saved addresses
+  // Fetch the profile
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
 
-  const materialsList = materials || []
+  if (!profile) {
+    redirect('/login')
+  }
+
+  if (profile.role !== 'klant') {
+    redirect('/portaal/admin')
+  }
 
   return (
     <div className="space-y-6">
-      {/* Back to dashboard breadcrumb */}
+      {/* Breadcrumb */}
       <div>
         <Link
           href="/portaal/klant"
@@ -44,18 +43,12 @@ export default async function NieuweBestelling() {
         </Link>
       </div>
 
-      {/* Header title */}
-      <div className="space-y-1">
-        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-          Nieuwe bestelling invoeren
-        </h1>
-        <p className="text-sm text-gray-500">
-          Configureer uw platenbestelling stap voor stap.
-        </p>
+      <div>
+        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Instellingen</h1>
+        <p className="text-sm text-gray-400 mt-1">Beheer uw bedrijfsgegevens, adressen en inloggegevens.</p>
       </div>
 
-      {/* Wizard Form */}
-      <OrderForm materials={materialsList} profile={profile} />
+      <SettingsForm initialProfile={profile} />
     </div>
   )
 }

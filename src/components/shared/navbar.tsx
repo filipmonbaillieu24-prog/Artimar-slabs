@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LogOut, User, ShieldAlert } from 'lucide-react'
+import { LogOut, User, ShieldAlert, Settings } from 'lucide-react'
 
 export default function Navbar() {
   const router = useRouter()
@@ -80,6 +80,17 @@ export default function Navbar() {
                 {userProfile.role === 'admin' ? 'Beheer' : 'Partner'}
               </span>
             </div>
+
+            {/* Instellingen link for customers */}
+            {userProfile.role === 'klant' && (
+              <button
+                onClick={() => router.push('/portaal/klant/instellingen')}
+                className="inline-flex items-center gap-1.5 px-3 py-2 border border-gray-200 hover:border-gray-300 rounded-lg text-xs font-semibold text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span>Instellingen</span>
+              </button>
+            )}
 
             {/* Logout button */}
             <button

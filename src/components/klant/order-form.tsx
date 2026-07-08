@@ -3,11 +3,12 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Material } from '@/types/database.types'
+import { Material, Profile } from '@/types/database.types'
 import { ChevronRight, ChevronLeft, Check, Plus, Trash2, Loader2, Sparkles, LayoutList, MapPin, Truck, Info } from 'lucide-react'
 
 interface OrderFormProps {
   materials: Material[]
+  profile?: Profile | null
 }
 
 interface SelectedPlateItem {
@@ -16,7 +17,7 @@ interface SelectedPlateItem {
   aantal: number
 }
 
-export default function OrderForm({ materials }: OrderFormProps) {
+export default function OrderForm({ materials, profile }: OrderFormProps) {
   const router = useRouter()
   const supabase = createClient()
   
@@ -123,7 +124,7 @@ export default function OrderForm({ materials }: OrderFormProps) {
       // 1. Insert main order
       const finalAddress = 
         leveringMethode === 'standaard' 
-          ? 'Standaard partneradres' 
+          ? (profile?.standaard_adres || 'Standaard partneradres') 
           : (leveringMethode === 'ophalen' ? 'Afhalen bij Artimar' : leveringAdres)
 
       const { data: order, error: orderError } = await supabase
@@ -520,18 +521,42 @@ export default function OrderForm({ materials }: OrderFormProps) {
               </div>
             </div>
 
-            {/* Custom address textarea if selected */}
+            {/* Custom address selection / textarea if selected */}
             {leveringMethode === 'ander' && (
-              <div className="space-y-2 animate-fade-in">
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-600 block">
-                  Afwijkend Leveringsadres <span className="text-[#D10056]">*</span>
-                </label>
-                <textarea
-                  value={leveringAdres}
-                  onChange={(e) => setLeveringAdres(e.target.value)}
-                  placeholder="Voer straatnaam, nummer, postcode en plaats in..."
-                  className="w-full artimar-input h-24 resize-none"
-                />
+              <div className="space-y-4 animate-fade-in">
+                {profile?.andere_adressen && profile.andere_adressen.length > 0 && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Kies uit opgeslagen werven</label>
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setLeveringAdres(e.target.value)
+                         }
+                      }}
+                      className="w-full text-xs font-semibold py-2.5 px-3 border border-gray-200 rounded-lg bg-gray-50/50"
+                    >
+                      <option value="">-- Selecteer een opgeslagen adres --</option>
+                      {profile.andere_adressen.map((addr) => (
+                        <option key={addr} value={addr}>{addr}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-gray-600 block">
+                    {profile?.andere_adressen && profile.andere_adressen.length > 0 
+                      ? "Of voer een ander handmatig adres in" 
+                      : "Afwijkend Leveringsadres"
+                    } <span className="text-[#D10056]">*</span>
+                  </label>
+                  <textarea
+                    value={leveringAdres}
+                    onChange={(e) => setLeveringAdres(e.target.value)}
+                    placeholder="Voer straatnaam, nummer, postcode en plaats in..."
+                    className="w-full artimar-input h-24 resize-none"
+                  />
+                </div>
               </div>
             )}
 

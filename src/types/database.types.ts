@@ -13,6 +13,10 @@ export interface Profile {
   bedrijfsnaam: string | null
   role: UserRole
   created_at: string
+  standaard_adres: string | null
+  andere_adressen: string[] | null
+  contactnummer: string | null
+  openingsuren: string | null
 }
 
 export interface Material {

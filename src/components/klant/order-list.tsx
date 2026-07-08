@@ -1,18 +1,42 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { Order, OrderItem } from '@/types/database.types'
 import { formatDate, formatDateTime } from '@/lib/utils'
 import StatusBadge from '@/components/shared/status-badge'
-import { Download, FileText, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
+import { Download, FileText, ChevronDown, ChevronUp, AlertCircle, Trash2 } from 'lucide-react'
 
 interface OrderListProps {
   initialOrders: Order[]
 }
 
 export default function OrderList({ initialOrders }: OrderListProps) {
+  const router = useRouter()
+  const supabase = createClient()
+  
   const [orders, setOrders] = useState<Order[]>(initialOrders)
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!window.confirm('Weet u zeker dat u deze bestelling wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')) {
+      return
+    }
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId)
+
+      if (error) throw error
+
+      setOrders(prev => prev.filter(o => o.id !== orderId))
+      router.refresh()
+    } catch (err: any) {
+      alert(`Fout bij het verwijderen van de bestelling: ${err.message || err}`)
+    }
+  }
 
   const toggleExpand = (orderId: string) => {
     setExpandedOrder(expandedOrder === orderId ? null : orderId)
@@ -91,6 +115,15 @@ export default function OrderList({ initialOrders }: OrderListProps) {
                       <ChevronDown className="w-3.5 h-3.5" />
                     </>
                   )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDeleteOrder(order.id)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 border border-red-200 hover:border-red-300 text-red-650 hover:bg-red-50 text-xs font-semibold rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Verwijderen
                 </button>
               </div>
             </div>

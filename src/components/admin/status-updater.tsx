@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Order, OrderStatus } from '@/types/database.types'
-import { Loader2, RefreshCw } from 'lucide-react'
+import { Loader2, RefreshCw, Trash2 } from 'lucide-react'
 
 interface StatusUpdaterProps {
   order: Order
@@ -28,6 +28,29 @@ export default function StatusUpdater({ order }: StatusUpdaterProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+
+  const handleDeleteOrder = async () => {
+    if (!window.confirm('Weet u zeker dat u deze bestelling permanent wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')) {
+      return
+    }
+    setLoading(true)
+    setError(null)
+    setSuccess(false)
+    try {
+      const { error: deleteError } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', order.id)
+
+      if (deleteError) throw deleteError
+
+      router.refresh()
+      router.push('/portaal/admin')
+    } catch (err: any) {
+      setError(err.message || 'Fout bij het verwijderen van de bestelling.')
+      setLoading(false)
+    }
+  }
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -187,6 +210,18 @@ export default function StatusUpdater({ order }: StatusUpdaterProps) {
           )}
         </button>
       </form>
+
+      <div className="border-t border-gray-150 pt-4 mt-6">
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handleDeleteOrder}
+          className="w-full py-3.5 border border-red-200 hover:border-red-300 hover:bg-red-50/50 text-red-600 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+        >
+          <Trash2 className="w-4 h-4" />
+          Bestelling Verwijderen
+        </button>
+      </div>
     </div>
   )
 }

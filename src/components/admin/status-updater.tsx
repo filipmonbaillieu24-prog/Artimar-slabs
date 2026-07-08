@@ -79,8 +79,8 @@ export default function StatusUpdater({ order }: StatusUpdaterProps) {
       const updates: any = {
         status,
         updated_at: new Date().toISOString(),
-        verwachte_datum: status === 'materiaal niet voorradig' ? verwachteDatum : null,
-        leverdatum: status === 'bestelling ingepland voor levering' ? leverdatum : null,
+        verwachte_datum: verwachteDatum || null,
+        leverdatum: leverdatum || null,
       }
 
       // 1. Update the order
@@ -100,8 +100,8 @@ export default function StatusUpdater({ order }: StatusUpdaterProps) {
           old_status: order.status,
           new_status: status,
           metadata: {
-            verwachte_datum: status === 'materiaal niet voorradig' ? verwachteDatum : null,
-            leverdatum: status === 'bestelling ingepland voor levering' ? leverdatum : null,
+            verwachte_datum: verwachteDatum || null,
+            leverdatum: leverdatum || null,
           }
         })
 
@@ -157,39 +157,39 @@ export default function StatusUpdater({ order }: StatusUpdaterProps) {
           </select>
         </div>
 
-        {/* Conditional Field: Expected Date */}
-        {status === 'materiaal niet voorradig' && (
-          <div className="space-y-1.5 animate-fadeIn">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-              Verwachte Datum *
-            </label>
-            <input
-              type="date"
-              required
-              value={verwachteDatum}
-              onChange={(e) => setVerwachteDatum(e.target.value)}
-              className="w-full artimar-input text-xs"
-              disabled={loading}
-            />
-          </div>
-        )}
+        {/* Field: Expected Date */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+            Verwachte Datum {status === 'materiaal niet voorradig' && <span className="text-red-500">*</span>}
+          </label>
+          <input
+            type="date"
+            value={verwachteDatum}
+            onChange={(e) => {
+              setVerwachteDatum(e.target.value)
+              setSuccess(false)
+            }}
+            className="w-full artimar-input text-xs"
+            disabled={loading}
+          />
+        </div>
 
-        {/* Conditional Field: Delivery Date */}
-        {status === 'bestelling ingepland voor levering' && (
-          <div className="space-y-1.5 animate-fadeIn">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-              Leverdatum *
-            </label>
-            <input
-              type="date"
-              required
-              value={leverdatum}
-              onChange={(e) => setLeverdatum(e.target.value)}
-              className="w-full artimar-input text-xs"
-              disabled={loading}
-            />
-          </div>
-        )}
+        {/* Field: Delivery Date */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+            Definitieve Leverdatum {status === 'bestelling ingepland voor levering' && <span className="text-red-500">*</span>}
+          </label>
+          <input
+            type="date"
+            value={leverdatum}
+            onChange={(e) => {
+              setLeverdatum(e.target.value)
+              setSuccess(false)
+            }}
+            className="w-full artimar-input text-xs"
+            disabled={loading}
+          />
+        </div>
 
         {/* Submit */}
         <button

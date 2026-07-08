@@ -716,14 +716,31 @@ export default function OrderForm({ materials, profile }: OrderFormProps) {
             </span>
           </div>
 
-          <div className="flex justify-between items-center py-2.5">
-            <span className="text-gray-400 font-medium">Leveringsmethode</span>
-            <span className="font-bold text-gray-800 text-right">
-              {leveringMethode === 'standaard' 
-                ? 'Standaard' 
-                : (leveringMethode === 'ander' ? 'Ander adres' : 'Afhalen')
-              }
-            </span>
+          <div className="flex flex-col py-2.5 gap-1">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-400 font-medium">Leveringsmethode</span>
+              <span className="font-bold text-gray-800 text-right">
+                {leveringMethode === 'standaard' 
+                  ? 'Standaard' 
+                  : (leveringMethode === 'ander' ? 'Ander adres' : 'Afhalen')
+                }
+              </span>
+            </div>
+            {leveringMethode === 'standaard' && profile?.standaard_adres && (
+              <span className="text-[10px] text-gray-500 font-semibold text-right leading-tight break-words mt-0.5">
+                {profile.standaard_adres}
+              </span>
+            )}
+            {leveringMethode === 'ander' && leveringAdres && (
+              <span className="text-[10px] text-gray-500 font-semibold text-right leading-tight break-words mt-0.5">
+                {leveringAdres}
+              </span>
+            )}
+            {leveringMethode === 'ophalen' && (
+              <span className="text-[10px] text-gray-500 font-semibold text-right leading-tight mt-0.5">
+                Afhalen bij Artimar NV (Tongeren)
+              </span>
+            )}
           </div>
 
           <div className="flex justify-between items-center py-2.5">
@@ -732,6 +749,25 @@ export default function OrderForm({ materials, profile }: OrderFormProps) {
               {plateItems.length > 0 ? `${plateItems.length}` : '-'}
             </span>
           </div>
+
+          {/* Itemized slab list */}
+          {plateItems.length > 0 && (
+            <div className="py-3 space-y-2">
+              <span className="text-gray-400 font-medium block">Geselecteerde platen:</span>
+              <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                {plateItems.map((item) => (
+                  <div key={item.id} className="flex justify-between items-start text-[11px] bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <span className="font-bold text-gray-700 max-w-[150px] truncate">
+                      {item.material.kleur} ({item.material.code})
+                    </span>
+                    <span className="font-extrabold text-[#D10056] shrink-0">
+                      {item.aantal} st.
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-between items-center py-2.5">
             <span className="text-gray-400 font-medium">Totaal aantal platen</span>
@@ -744,15 +780,6 @@ export default function OrderForm({ materials, profile }: OrderFormProps) {
           </div>
         </div>
 
-        {/* Small branding hint in summary */}
-        <div className="mt-8 p-4 bg-[#FFF0F5] border border-[#FAD0E0]/60 rounded-xl flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#D10056] flex items-center justify-center text-white shrink-0 shadow-sm">
-            <Sparkles className="w-4 h-4" />
-          </div>
-          <div className="text-[10px] leading-normal text-gray-500 font-medium">
-            Artimar levert maatwerk in marmer, graniet, composiet en keramiek met passie.
-          </div>
-        </div>
       </div>
     </div>
   )

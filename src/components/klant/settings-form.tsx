@@ -6,6 +6,28 @@ import { createClient } from '@/lib/supabase/client'
 import { Profile } from '@/types/database.types'
 import { Building, Phone, Clock, MapPin, Mail, Lock, Plus, Trash2, Loader2, CheckCircle } from 'lucide-react'
 
+const defaultHours = {
+  maandag: { gesloten: false, van1: '08:00', tot1: '12:00', van2: '13:00', tot2: '17:00' },
+  dinsdag: { gesloten: false, van1: '08:00', tot1: '12:00', van2: '13:00', tot2: '17:00' },
+  woensdag: { gesloten: false, van1: '08:00', tot1: '12:00', van2: '13:00', tot2: '17:00' },
+  donderdag: { gesloten: false, van1: '08:00', tot1: '12:00', van2: '13:00', tot2: '17:00' },
+  vrijdag: { gesloten: false, van1: '08:00', tot1: '12:00', van2: '13:00', tot2: '17:00' },
+  zaterdag: { gesloten: true, van1: '', tot1: '', van2: '', tot2: '' },
+  zondag: { gesloten: true, van1: '', tot1: '', van2: '', tot2: '' }
+}
+
+const dayNames: Record<string, string> = {
+  maandag: 'Maandag',
+  dinsdag: 'Dinsdag',
+  woensdag: 'Woensdag',
+  donderdag: 'Donderdag',
+  vrijdag: 'Vrijdag',
+  zaterdag: 'Zaterdag',
+  zondag: 'Zondag'
+}
+
+const daysOfWeek = ['maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag']
+
 interface SettingsFormProps {
   initialProfile: Profile
 }
@@ -22,8 +44,20 @@ export default function SettingsForm({ initialProfile }: SettingsFormProps) {
   // Form states
   const [bedrijfsnaam, setBedrijfsnaam] = useState(initialProfile.bedrijfsnaam || '')
   const [contactnummer, setContactnummer] = useState(initialProfile.contactnummer || '')
-  const [openingsuren, setOpeningsuren] = useState(initialProfile.openingsuren || '')
   const [standaardAdres, setStandaardAdres] = useState(initialProfile.standaard_adres || '')
+
+  const parseOpeningsuren = (val: string | null) => {
+    if (!val) return defaultHours
+    try {
+      const parsed = JSON.parse(val)
+      if (parsed && typeof parsed === 'object' && 'maandag' in parsed) {
+        return parsed
+      }
+    } catch (e) {}
+    return defaultHours
+  }
+
+  const [hours, setHours] = useState<Record<string, any>>(parseOpeningsuren(initialProfile.openingsuren))
   
   // Alternative addresses list
   const [andereAdressen, setAndereAdressen] = useState<string[]>(
@@ -65,7 +99,7 @@ export default function SettingsForm({ initialProfile }: SettingsFormProps) {
         .update({
           bedrijfsnaam: bedrijfsnaam.trim() || null,
           contactnummer: contactnummer.trim() || null,
-          openingsuren: openingsuren.trim() || null,
+          openingsuren: JSON.stringify(hours),
           standaard_adres: standaardAdres.trim() || null,
           andere_adressen: andereAdressen
         })
@@ -171,24 +205,118 @@ export default function SettingsForm({ initialProfile }: SettingsFormProps) {
               </div>
             </div>
 
-            {/* Delivery Opening Hours */}
-            <div className="space-y-1.5">
+            {/* Detailed Opening Hours per day */}
+            <div className="space-y-3 pt-4 border-t border-gray-100">
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
                 Openingsuren (voor leveringen)
               </label>
-              <div className="relative">
-                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={openingsuren}
-                  onChange={(e) => setOpeningsuren(e.target.value)}
-                  placeholder="Bijv. Ma-Vr: 08:00 - 17:00 (gesloten tussen 12:00-13:00)"
-                  className="w-full pl-9 artimar-input text-xs"
-                />
-              </div>
-              <p className="text-[10px] text-gray-400 font-medium">
-                De uren waarbinnen leveringen van platen op uw werf of magazijn mogelijk zijn.
+              <p className="text-[10px] text-gray-400 font-medium -mt-1 pb-1 leading-normal">
+                Geef per dag aan of leveringen mogelijk zijn en tussen welke uren. Vul desgewenst twee shifts in (bijv. voor of na de middagpauze).
               </p>
+
+              <div className="space-y-3">
+                {daysOfWeek.map((day) => {
+                  const dayObj = hours[day] || { gesloten: true, van1: '', tot1: '', van2: '', tot2: '' }
+                  return (
+                    <div 
+                      key={day}
+                      className="p-3 bg-gray-50/50 border border-gray-150 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center justify-between sm:justify-start gap-4 sm:w-1/3">
+                        <span className="text-gray-800 font-black min-w-[75px]">{dayNames[day]}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHours({
+                              ...hours,
+                              [day]: { ...dayObj, gesloten: !dayObj.gesloten }
+                            })
+                          }}
+                          className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider transition-colors border ${
+                            dayObj.gesloten
+                              ? 'bg-red-50 text-red-650 border-red-100'
+                              : 'bg-green-50 text-green-700 border-green-150'
+                          }`}
+                        >
+                          {dayObj.gesloten ? 'Gesloten' : 'Open'}
+                        </button>
+                      </div>
+
+                      {!dayObj.gesloten ? (
+                        <div className="flex flex-wrap items-center gap-3 sm:w-2/3 sm:justify-end">
+                          {/* Shift 1 */}
+                          <div className="flex items-center gap-1">
+                            <span className="text-[9px] text-gray-400 font-bold uppercase mr-1">Shift 1:</span>
+                            <input
+                              type="text"
+                              maxLength={5}
+                              placeholder="08:00"
+                              value={dayObj.van1 || ''}
+                              onChange={(e) => {
+                                setHours({
+                                  ...hours,
+                                  [day]: { ...dayObj, van1: e.target.value }
+                                })
+                              }}
+                              className="w-14 text-center py-1 px-1.5 border border-gray-250 rounded font-semibold text-xs"
+                            />
+                            <span className="text-gray-400 font-bold">-</span>
+                            <input
+                              type="text"
+                              maxLength={5}
+                              placeholder="12:00"
+                              value={dayObj.tot1 || ''}
+                              onChange={(e) => {
+                                setHours({
+                                  ...hours,
+                                  [day]: { ...dayObj, tot1: e.target.value }
+                                })
+                              }}
+                              className="w-14 text-center py-1 px-1.5 border border-gray-250 rounded font-semibold text-xs"
+                            />
+                          </div>
+
+                          {/* Shift 2 */}
+                          <div className="flex items-center gap-1">
+                            <span className="text-[9px] text-gray-400 font-bold uppercase mr-1">Shift 2:</span>
+                            <input
+                              type="text"
+                              maxLength={5}
+                              placeholder="13:00"
+                              value={dayObj.van2 || ''}
+                              onChange={(e) => {
+                                setHours({
+                                  ...hours,
+                                  [day]: { ...dayObj, van2: e.target.value }
+                                })
+                              }}
+                              className="w-14 text-center py-1 px-1.5 border border-gray-250 rounded font-semibold text-xs"
+                            />
+                            <span className="text-gray-400 font-bold">-</span>
+                            <input
+                              type="text"
+                              maxLength={5}
+                              placeholder="17:00"
+                              value={dayObj.tot2 || ''}
+                              onChange={(e) => {
+                                setHours({
+                                  ...hours,
+                                  [day]: { ...dayObj, tot2: e.target.value }
+                                })
+                              }}
+                              className="w-14 text-center py-1 px-1.5 border border-gray-250 rounded font-semibold text-xs"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-gray-400 italic text-[10px] sm:w-2/3 sm:text-right py-1">
+                          Geen leveringen mogelijk
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </div>
 

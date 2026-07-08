@@ -40,8 +40,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
     .select(`
       *,
       profiles (
-        email,
-        bedrijfsnaam
+        *
       ),
       order_items (
         *,
@@ -69,8 +68,31 @@ export default async function OrderDetailPage({ params }: PageProps) {
     .order('changed_at', { ascending: false })
 
   const typedHistory = history || []
-  const client = order.profiles
+  const client = order.profiles as any
   const isDeliveryScheduled = order.status === 'bestelling ingepland voor levering'
+
+  // Helper to parse openingsuren JSON
+  const parseHours = (val: string | null) => {
+    if (!val) return null
+    try {
+      const parsed = JSON.parse(val)
+      if (parsed && typeof parsed === 'object' && 'maandag' in parsed) {
+        return parsed
+      }
+    } catch (e) {}
+    return null
+  }
+  const openingsurenParsed = parseHours(client?.openingsuren)
+  const dayNamesDutch: Record<string, string> = {
+    maandag: 'Maandag',
+    dinsdag: 'Dinsdag',
+    woensdag: 'Woensdag',
+    donderdag: 'Donderdag',
+    vrijdag: 'Vrijdag',
+    zaterdag: 'Zaterdag',
+    zondag: 'Zondag'
+  }
+  const daysKeys = ['maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag']
 
   return (
     <div className="space-y-6">
@@ -136,7 +158,46 @@ export default async function OrderDetailPage({ params }: PageProps) {
                 <span className="text-gray-400 block font-medium">E-mailadres:</span>
                 <span className="text-gray-800 font-bold mt-0.5 block">{client?.email}</span>
               </div>
+              {client?.contactnummer && (
+                <div>
+                  <span className="text-gray-400 block font-medium">Contactnummer:</span>
+                  <span className="text-gray-800 font-bold mt-0.5 block">{client.contactnummer}</span>
+                </div>
+              )}
+              {client?.standaard_adres && (
+                <div className="sm:col-span-2">
+                  <span className="text-gray-400 block font-medium">Standaard Adres:</span>
+                  <span className="text-gray-800 font-bold mt-0.5 block bg-gray-50/50 p-2.5 rounded-lg border border-gray-100">
+                    {client.standaard_adres}
+                  </span>
+                </div>
+              )}
             </div>
+
+            {/* Structured weekly opening hours display */}
+            {openingsurenParsed && (
+              <div className="border-t border-gray-50 pt-4 mt-4 text-xs space-y-2">
+                <span className="text-gray-400 block font-bold uppercase tracking-wider text-[10px]">Wekelijkse openingsuren voor levering:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 bg-gray-50/30 p-4 rounded-xl border border-gray-100 mt-1">
+                  {daysKeys.map((day) => {
+                    const dayObj = openingsurenParsed[day]
+                    const isClosed = !dayObj || dayObj.gesloten
+                    return (
+                      <div key={day} className="flex justify-between items-center py-0.5 border-b border-gray-100/40 last:border-b-0">
+                        <span className="text-gray-500 font-bold">{dayNamesDutch[day]}:</span>
+                        <span className={`font-semibold ${isClosed ? 'text-red-500 italic' : 'text-gray-800'}`}>
+                          {isClosed ? (
+                            'Gesloten'
+                          ) : (
+                            `${dayObj.van1 || ''}-${dayObj.tot1 || ''}${dayObj.van2 ? ` & ${dayObj.van2}-${dayObj.tot2}` : ''}`
+                          )}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Dates & Remarks */}

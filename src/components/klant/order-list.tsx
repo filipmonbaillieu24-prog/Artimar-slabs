@@ -136,19 +136,19 @@ export default function OrderList({ initialOrders }: OrderListProps) {
 
       {viewMode === 'pipeline' ? (
         /* KANBAN PIPELINE VIEW */
-        <div className="flex gap-4 overflow-x-auto pb-4 snap-x select-none">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 w-full select-none">
           {pipelineColumns.map((col) => {
             const colOrders = getOrdersByStatus(col.id)
             return (
               <div
                 key={col.id}
-                className={`flex-1 min-w-[270px] max-w-[310px] rounded-2xl border p-4 flex flex-col gap-3 snap-start bg-white border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.01)]`}
+                className="flex flex-col gap-2.5 rounded-2xl border border-gray-100 bg-white p-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full"
               >
                 {/* Column header */}
                 <div className="flex justify-between items-center pb-2 border-b border-gray-50">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <span className={`w-2 h-2 rounded-full ${col.dotClass}`} />
-                    <h4 className="font-extrabold text-[11px] text-gray-800 uppercase tracking-wider">{col.title}</h4>
+                    <h4 className="font-extrabold text-[10px] text-gray-800 uppercase tracking-wider">{col.title}</h4>
                   </div>
                   <span className="text-[10px] bg-gray-50 border border-gray-150 px-2 py-0.5 rounded-full font-bold text-gray-500">
                     {colOrders.length}
@@ -170,14 +170,14 @@ export default function OrderList({ initialOrders }: OrderListProps) {
                       return (
                         <div
                           key={order.id}
-                          className="bg-white border border-gray-100 rounded-xl p-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.015)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.035)] transition-all space-y-3"
+                          className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.015)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.035)] transition-all space-y-2.5"
                         >
                           <div className="flex justify-between items-start gap-1">
-                            <span className="text-[10px] font-black text-gray-800">
+                            <span className="text-[10px] font-black text-gray-800 shrink-0">
                               #{order.id.slice(0, 8).toUpperCase()}
                             </span>
                             {order.referentie && (
-                              <span className="text-[9px] bg-gray-50 text-gray-600 font-bold px-1.5 py-0.5 rounded border border-gray-150 truncate max-w-[110px]" title={order.referentie}>
+                              <span className="text-[9px] bg-gray-50 text-gray-600 font-bold px-1.5 py-0.5 rounded border border-gray-150 truncate flex-1 text-right max-w-[90px]" title={order.referentie}>
                                 {order.referentie}
                               </span>
                             )}
@@ -201,8 +201,8 @@ export default function OrderList({ initialOrders }: OrderListProps) {
                           {order.order_items && order.order_items.length > 0 && (
                             <div className="bg-gray-50/50 p-2 rounded-lg border border-gray-100/50 text-[9px] space-y-0.5 text-gray-500">
                               {order.order_items.map((item: any) => (
-                                <div key={item.id} className="flex justify-between font-semibold">
-                                  <span className="truncate max-w-[130px]" title={item.materials?.kleur}>
+                                <div key={item.id} className="flex justify-between items-center font-semibold gap-1">
+                                  <span className="truncate flex-1 mr-1" title={item.materials?.kleur}>
                                     {item.materials?.kleur || 'Slab'}
                                   </span>
                                   <span className="text-[#D10056] font-bold shrink-0">{item.aantal} st.</span>

@@ -57,6 +57,7 @@ export interface OrderItem {
   aantal: number
   op_voorraad: boolean | null   // null = not yet checked, true = in stock, false = not in stock
   geleverd: boolean             // true once this item has been delivered
+  verwachte_datum: string | null // estimated delivery date for not-in-stock items
   materials?: Material
 }
 

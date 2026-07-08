@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Resend } from 'resend'
 import { createClient } from '@/lib/supabase/server'
-import { formatDate } from '@/lib/utils'
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,16 +8,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order ID is verplicht.' }, { status: 400 })
     }
 
-    const resendApiKey = process.env.RESEND_API_KEY
-    if (!resendApiKey) {
-      console.warn('RESEND_API_KEY is niet ingesteld. E-mailverzending is overgeslagen.')
+    const mailchimpApiKey = process.env.MAILCHIMP_TRANSACTIONAL_API_KEY
+    if (!mailchimpApiKey) {
+      console.warn('MAILCHIMP_TRANSACTIONAL_API_KEY is niet ingesteld. E-mailverzending is overgeslagen.')
       return NextResponse.json({ 
         success: true, 
-        warning: 'RESEND_API_KEY is niet geconfigureerd. Voeg deze toe aan uw .env.local.' 
+        warning: 'Mailchimp API key is niet geconfigureerd.' 
       })
     }
 
-    const resend = new Resend(resendApiKey)
     const supabase = await createClient()
 
     // 1. Fetch order details with joined order_items and materials
@@ -60,7 +57,7 @@ export async function POST(req: NextRequest) {
     const profile = order.profiles as any
     const items = (order.order_items || []) as any[]
 
-    // 2. Format order details into HTML table rows
+    // 2. Format order items into HTML table rows
     const formattedItemsHtml = items
       .map((item) => {
         const mat = item.materials
@@ -82,6 +79,11 @@ export async function POST(req: NextRequest) {
 
     const totalPlates = items.reduce((acc, item) => acc + item.aantal, 0)
 
+    const leveringLabel =
+      order.levering_methode === 'standaard' ? 'Standaard Levering' :
+      order.levering_methode === 'ander' ? 'Afwijkend Leveringsadres' :
+      order.levering_methode === 'ophalen' ? 'Ophalen bij Artimar' : '-'
+
     const emailHtml = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 8px;">
         <div style="background-color: #D10056; padding: 24px; text-align: center; border-radius: 8px 8px 0 0;">
@@ -90,10 +92,10 @@ export async function POST(req: NextRequest) {
         </div>
         
         <div style="padding: 24px; background-color: #fff;">
-          <h2 style="font-size: 14px; color: #888; text-transform: uppercase; tracking-wider: 1px; border-bottom: 2px solid #f5f5f5; padding-bottom: 8px; margin-top: 0;">Klantgegevens</h2>
+          <h2 style="font-size: 14px; color: #888; text-transform: uppercase; border-bottom: 2px solid #f5f5f5; padding-bottom: 8px; margin-top: 0;">Klantgegevens</h2>
           <table style="width: 100%; font-size: 13px; margin-bottom: 24px; border-collapse: collapse;">
             <tr>
-              <td style="padding: 6px 0; color: #666; width: 130px; font-weight: bold;">Bedrijfsnaam:</td>
+              <td style="padding: 6px 0; color: #666; width: 140px; font-weight: bold;">Bedrijfsnaam:</td>
               <td style="padding: 6px 0; color: #333; font-weight: bold;">${profile?.bedrijfsnaam || 'Onbekend'}</td>
             </tr>
             <tr>
@@ -106,19 +108,15 @@ export async function POST(req: NextRequest) {
             </tr>
           </table>
 
-          <h2 style="font-size: 14px; color: #888; text-transform: uppercase; tracking-wider: 1px; border-bottom: 2px solid #f5f5f5; padding-bottom: 8px;">Bestelling Details</h2>
+          <h2 style="font-size: 14px; color: #888; text-transform: uppercase; border-bottom: 2px solid #f5f5f5; padding-bottom: 8px;">Bestelling Details</h2>
           <table style="width: 100%; font-size: 13px; margin-bottom: 24px; border-collapse: collapse;">
             <tr>
-              <td style="padding: 6px 0; color: #666; width: 130px; font-weight: bold;">Referentie:</td>
+              <td style="padding: 6px 0; color: #666; width: 140px; font-weight: bold;">Referentie:</td>
               <td style="padding: 6px 0; color: #D10056; font-weight: bold;">${order.referentie || 'Geen'}</td>
             </tr>
             <tr>
               <td style="padding: 6px 0; color: #666; font-weight: bold;">Leveringsmethode:</td>
-              <td style="padding: 6px 0; color: #333; font-weight: bold;">
-                ${order.levering_methode === 'standaard' ? 'Standaard Levering' : ''}
-                ${order.levering_methode === 'ander' ? 'Afwijkend Leveringsadres' : ''}
-                ${order.levering_methode === 'ophalen' ? 'Ophalen bij Artimar' : ''}
-              </td>
+              <td style="padding: 6px 0; color: #333; font-weight: bold;">${leveringLabel}</td>
             </tr>
             <tr>
               <td style="padding: 6px 0; color: #666; font-weight: bold;">Afleveradres:</td>
@@ -130,7 +128,7 @@ export async function POST(req: NextRequest) {
             </tr>
           </table>
 
-          <h2 style="font-size: 14px; color: #888; text-transform: uppercase; tracking-wider: 1px; border-bottom: 2px solid #f5f5f5; padding-bottom: 8px;">Bestelde Materialen</h2>
+          <h2 style="font-size: 14px; color: #888; text-transform: uppercase; border-bottom: 2px solid #f5f5f5; padding-bottom: 8px;">Bestelde Materialen</h2>
           <table style="width: 100%; font-size: 12px; border-collapse: collapse; margin-bottom: 12px;">
             <thead>
               <tr style="background-color: #fcfcfc; border-bottom: 2px solid #eee; text-align: left; color: #888;">
@@ -157,22 +155,45 @@ export async function POST(req: NextRequest) {
       </div>
     `
 
-    const fromEmail = process.env.EMAIL_FROM || 'Artimar Portaal <onboarding@resend.dev>'
+    const fromEmail = process.env.EMAIL_FROM || 'bestellingen@artimar.be'
     const toEmail = process.env.EMAIL_TO || 'bestellingen@artimar.be'
-    
-    const { data, error: sendError } = await resend.emails.send({
-      from: fromEmail,
-      to: toEmail,
-      subject: `Nieuwe bestelling #${order.id.slice(0, 8).toUpperCase()} - ${profile?.bedrijfsnaam || 'Klant'}`,
-      html: emailHtml,
+    const subject = `Nieuwe bestelling #${order.id.slice(0, 8).toUpperCase()} - ${profile?.bedrijfsnaam || 'Klant'}`
+
+    // Send via Mailchimp Transactional (Mandrill) REST API
+    const response = await fetch('https://mandrillapp.com/api/1.0/messages/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        key: mailchimpApiKey,
+        message: {
+          html: emailHtml,
+          subject: subject,
+          from_email: fromEmail,
+          from_name: 'Artimar Portaal',
+          to: [{ email: toEmail, type: 'to' }]
+        }
+      })
     })
 
-    if (sendError) {
-      console.error('Resend API Error:', sendError)
-      throw new Error(`Resend Error: ${sendError.message} (${sendError.name})`)
+    const data = await response.json()
+
+    // Mandrill returns an array on success: [{ status: 'sent', _id: '...' }]
+    // or a single error object: { status: 'error', message: '...' }
+    if (!response.ok || data.status === 'error') {
+      const errMsg = data.message || 'Mailchimp verzending mislukt.'
+      console.error('Mailchimp API Error:', JSON.stringify(data, null, 2))
+      throw new Error(`Mailchimp Error: ${errMsg}`)
     }
 
-    return NextResponse.json({ success: true, messageId: data?.id })
+    if (Array.isArray(data) && data[0]?.status === 'rejected') {
+      const errMsg = data[0]?.reject_reason || 'Mailchimp bericht geweigerd.'
+      console.error('Mailchimp rejected email:', JSON.stringify(data, null, 2))
+      throw new Error(`Mailchimp rejected: ${errMsg}`)
+    }
+
+    console.log('Mailchimp email sent successfully:', JSON.stringify(data, null, 2))
+    return NextResponse.json({ success: true, messageId: data[0]?._id || null })
+
   } catch (error: any) {
     console.error('Fout bij verzenden bestelling e-mail:', error)
     return NextResponse.json({ error: error.message || 'Interne serverfout' }, { status: 500 })

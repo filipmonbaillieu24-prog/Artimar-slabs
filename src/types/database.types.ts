@@ -6,6 +6,9 @@ export type OrderStatus =
   | 'materiaal voorradig'
   | 'materiaal niet voorradig'
   | 'bestelling ingepland voor levering'
+  | 'deellevering uitgevoerd'
+  | 'nalevering geleverd'
+  | 'bestelling geleverd'
 
 export interface Profile {
   id: string
@@ -49,9 +52,11 @@ export interface OrderItem {
   id: string
   order_id: string
   material_id: string
-  lengte_mm: number
-  breedte_mm: number
+  lengte_mm: number | null
+  breedte_mm: number | null
   aantal: number
+  op_voorraad: boolean | null   // null = not yet checked, true = in stock, false = not in stock
+  geleverd: boolean             // true once this item has been delivered
   materials?: Material
 }
 

@@ -16,6 +16,9 @@ const statusOptions: { value: OrderStatus; label: string }[] = [
   { value: 'materiaal voorradig', label: 'Materiaal voorradig' },
   { value: 'materiaal niet voorradig', label: 'Materiaal niet voorradig' },
   { value: 'bestelling ingepland voor levering', label: 'Bestelling ingepland voor levering' },
+  { value: 'deellevering uitgevoerd', label: 'Deellevering uitgevoerd' },
+  { value: 'nalevering geleverd', label: 'Nalevering geleverd' },
+  { value: 'bestelling geleverd', label: 'Bestelling geleverd' },
 ]
 
 export default function StatusUpdater({ order }: StatusUpdaterProps) {

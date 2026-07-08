@@ -31,6 +31,18 @@ export default function StatusBadge({ status, className }: StatusBadgeProps) {
       badgeStyles = 'bg-[#FFF0F5] text-[#D10056] border-[#FAD0E0]'
       statusText = 'Ingepland voor levering'
       break
+    case 'deellevering uitgevoerd':
+      badgeStyles = 'bg-violet-50 text-violet-700 border-violet-200'
+      statusText = 'Deellevering uitgevoerd'
+      break
+    case 'nalevering geleverd':
+      badgeStyles = 'bg-teal-50 text-teal-700 border-teal-200'
+      statusText = 'Nalevering geleverd'
+      break
+    case 'bestelling geleverd':
+      badgeStyles = 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      statusText = 'Bestelling geleverd'
+      break
     default:
       badgeStyles = 'bg-gray-100 text-gray-700 border-gray-200'
       statusText = status

@@ -3,9 +3,10 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import StatusBadge from '@/components/shared/status-badge'
 import StatusUpdater from '@/components/admin/status-updater'
+import StockManager from '@/components/admin/stock-manager'
 import AuditTrail from '@/components/admin/audit-trail'
 import { formatDate, formatDateTime } from '@/lib/utils'
-import { ArrowLeft, User, Calendar, MessageSquare, List, Download } from 'lucide-react'
+import { ArrowLeft, User, Calendar, MessageSquare, Download, PackageCheck } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -241,50 +242,17 @@ export default async function OrderDetailPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Slabs ordered list table */}
+          {/* Slabs ordered — interactive stock manager */}
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 border-b border-gray-50 pb-3">
-              <List className="w-4 h-4" />
-              Gekozen Platen ({order.order_items?.length || 0})
+              <PackageCheck className="w-4 h-4" />
+              Voorraadbeheer & Levering ({order.order_items?.length || 0} items)
             </h3>
-            <div className="overflow-x-auto border border-gray-100 rounded-xl">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider">
-                    <th className="py-2.5 px-4">Merk & Code</th>
-                    <th className="py-2.5 px-4">Kleur & Afwerking</th>
-                    <th className="py-2.5 px-4">Dikte</th>
-                    <th className="py-2.5 px-4">Afmetingen</th>
-                    <th className="py-2.5 px-4 text-right">Aantal</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-gray-700 font-medium">
-                  {order.order_items?.map((item: any) => {
-                    const mat = item.materials
-                    return (
-                      <tr key={item.id}>
-                        <td className="py-3 px-4 font-bold text-gray-800">
-                          {mat ? `${mat.merk} - ${mat.code}` : 'Onbekend'}
-                        </td>
-                        <td className="py-3 px-4">
-                          {mat ? `${mat.kleur} (${mat.afwerking})` : 'Onbekend'}
-                        </td>
-                        <td className="py-3 px-4">{mat ? `${mat.dikte_mm} mm` : '-'}</td>
-                        <td className="py-3 px-4 text-gray-500">
-                          {item.lengte_mm && item.breedte_mm 
-                            ? `${item.lengte_mm} x ${item.breedte_mm} mm` 
-                            : 'Volledige plaat'
-                          }
-                        </td>
-                        <td className="py-3 px-4 text-right font-extrabold text-gray-850">
-                          {item.aantal} st.
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <StockManager
+              orderId={order.id}
+              initialItems={(order.order_items || []) as any}
+              orderStatus={order.status}
+            />
           </div>
         </div>
 

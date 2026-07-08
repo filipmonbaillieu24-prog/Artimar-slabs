@@ -67,13 +67,6 @@ export default async function KlantDashboard() {
             <Plus className="w-4 h-4" />
             Nieuwe bestelling
           </Link>
-          <button
-            disabled
-            className="inline-flex items-center gap-2 px-5 py-3 border border-gray-200 text-gray-400 bg-gray-50/50 font-bold rounded-lg text-sm cursor-not-allowed"
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            Nieuwe uitgebreide offerte
-          </button>
         </div>
       </div>
 
@@ -82,12 +75,6 @@ export default async function KlantDashboard() {
         <div className="flex gap-8 -mb-px">
           <button className="py-4 border-b-2 border-[#D10056] text-[#D10056] font-bold text-sm">
             Bestellingen ({typedOrders.length})
-          </button>
-          <button className="py-4 border-b-2 border-transparent text-gray-400 font-semibold text-sm hover:text-gray-600 cursor-not-allowed">
-            Concepten (0)
-          </button>
-          <button className="py-4 border-b-2 border-transparent text-gray-400 font-semibold text-sm hover:text-gray-600 cursor-not-allowed">
-            Offertes (0)
           </button>
         </div>
       </div>

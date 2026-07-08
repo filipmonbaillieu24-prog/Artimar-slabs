@@ -10,7 +10,7 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: "Artimar Partner Portaal",
-  description: "Beheer uw platenbestellingen en offertes online bij Artimar - Passion for Stone.",
+  description: "Beheer uw platenbestellingen online bij Artimar - Passion for Stone.",
 }
 
 export default function RootLayout({

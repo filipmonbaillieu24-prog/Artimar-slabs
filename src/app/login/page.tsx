@@ -87,7 +87,7 @@ export default function LoginPage() {
             Partner Portaal
           </h1>
           <p className="text-gray-400 text-sm text-center mb-8">
-            Log in om uw offertes te beheren.
+            Log in om uw bestellingen te beheren.
           </p>
 
           <form onSubmit={handleLogin} className="w-full space-y-5">
